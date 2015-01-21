@@ -1,0 +1,293 @@
+//
+//  HomePageViewController.m
+//  UThing
+//
+//  Created by Apple on 14/11/14.
+//  Copyright (c) 2014年 UThing. All rights reserved.
+//
+
+#import "HomePageViewController.h"
+
+#import "HomePageTableViewCell.h"
+#import "ParametersManagerObject.h"
+#import "HomeModel.h"
+#import "BroadModel.h"
+#import "NetworkingCenter.h"
+#import "CycleScrollView.h"
+#import "MJRefresh.h"
+
+#import "MyOrderFillInViewController.h"
+#import "ProductDetailViewController.h"
+#import "LoginStatusObject.h"
+#import "HotelProductDetailViewController.h"
+@class AppDelegate;
+
+
+
+static CGFloat const selectedViewHeight = 60;
+static NSInteger const selectedNum = 5; //每行放置几个按钮
+
+@interface HomePageViewController ()<UITableViewDataSource, UITableViewDelegate, HomePageTableViewCellDelegate, UITabBarControllerDelegate, UIAlertViewDelegate>
+{
+    UITableView *h_tableView;
+    UITabBarController *h_tabBarController;
+    CGFloat height;
+}
+@property (nonatomic, strong) UIView *headScrollViewBackView;
+@property (nonatomic, strong) NSArray *dataArray;
+@property (nonatomic) NSMutableArray *broadInfoArr;
+@property (nonatomic, strong) UIAlertView *homePageAl;
+
+@property (nonatomic, strong) UIScrollView *backScrollView;
+@property (nonatomic, strong) CycleScrollView *mainScrollView;
+@property (nonatomic, strong) UIView *selectedView;
+@property (nonatomic, strong) UIView *productView;
+@property (nonatomic, strong) UIImageView *footerView;
+
+@end
+
+@implementation HomePageViewController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+   
+
+    //新
+    [self mainView];
+
+}
+
+
+
+
+#pragma mark -
+#pragma mark ==新==
+- (void)mainView
+{
+    
+    
+    _backScrollView = [[UIScrollView alloc] initWithFrame:CGRectMake(0, 0, kMainScreenWidth, kMainScreenHeight-49-44)];
+    _backScrollView.backgroundColor = [UIColor colorFromHexRGB:@"eeeeee"];
+    _backScrollView.showsVerticalScrollIndicator = NO;
+    [self.view addSubview:_backScrollView];
+    
+    //中部选择栏
+    
+    _selectedView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, kMainScreenWidth, selectedViewHeight)];
+    _selectedView.backgroundColor = [UIColor whiteColor];
+    [_backScrollView addSubview:_selectedView];
+    
+    NSArray *nameArray = @[@"定制旅行", @"当地游", @"自由行", @"酒店套餐", @"规划师"];
+    NSArray *imageArray = @[@"app-详情页_07.png", @"app-详情页_07.png", @"app-详情页_07.png", @"app-详情页_07.png", @"app-详情页_07.png"];
+    
+    CGFloat w = kMainScreenWidth/selectedNum;
+    CGFloat h = selectedViewHeight;
+    for (NSInteger i=0; i<nameArray.count; i++) {
+        
+        CGFloat x = w*(i%selectedNum);
+        CGFloat y = selectedViewHeight*(i/selectedNum);
+        
+        UIButton *button = [UIButton buttonWithType:UIButtonTypeCustom];
+        [button setFrame:CGRectMake(x, y, w, h)];
+        button.tag = 1200 + i;
+        
+        UIImageView *imageView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, 30, 30)];
+        imageView.center = CGPointMake(w/2, (h-20)/2);
+        imageView.image = IMAGE(imageArray[i]);
+        [button addSubview:imageView];
+        
+        button.titleEdgeInsets = UIEdgeInsetsMake(selectedViewHeight-23, 0, 0, 0);
+        button.titleLabel.textAlignment = NSTextAlignmentCenter;
+        [button setTitleColor:[UIColor colorFromHexRGB:@"989898"] forState:UIControlStateNormal];
+        button.titleLabel.font = [UIFont systemFontOfSize:11];
+        [button setTitle:nameArray[i] forState:UIControlStateNormal];
+        
+        [button addTarget:self action:@selector(selectedViewTap:) forControlEvents:UIControlEventTouchUpInside];
+        
+        [_selectedView addSubview:button];
+        
+    }
+    
+    
+    
+    //产品
+    CGFloat top = _selectedView.bottom;
+    CGFloat w1 = (kMainScreenWidth-15)/2;
+    CGFloat h1 = w1 * .95;
+    
+    _productView = [[UIImageView alloc] initWithFrame:CGRectMake(0, top, kMainScreenWidth, (2*h1+15))];
+    _productView.userInteractionEnabled = YES;
+    _productView.backgroundColor = [UIColor colorFromHexRGB:@"eeeeee"];
+    [_backScrollView addSubview:_productView];
+    
+    for (NSInteger i = 0; i < 4; i++) {
+        CGFloat x = 5 + i % 2 * (w1+5);
+        CGFloat y = 5 + (h1+5) * (i/2);
+        
+        UIView *view = [[UIView alloc] initWithFrame:CGRectMake(x, y, w1, h1)];
+        view.backgroundColor = [UIColor whiteColor];
+        view.userInteractionEnabled = YES;
+        view.tag = 1300 + i;
+        
+        UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(productViewTap:)];
+        [view addGestureRecognizer:tap];
+        
+        [_productView addSubview:view];
+        
+        
+        
+        
+        UIImageView *imageView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, w1, w1*0.7)];
+        imageView.image = [UIImage imageNamed:@"app-详情页_40.png"];
+        [view addSubview:imageView];
+        
+        UILabel *label = [UILabel labelWithFrame:CGRectMake(5, imageView.bottom, w1-10, w1*.25) text:@"蓝色土耳其浪漫风情之旅8天, 蓝色土耳其浪漫风情之旅8天"];
+        label.font = [UIFont systemFontOfSize:12];
+        label.numberOfLines = 2;
+        [view addSubview:label];
+    }
+    
+    
+    
+    //footerView
+    //需判断是否存在footerView
+    _footerView = [UIImageView imageViewWithFrame:CGRectMake(5, _productView.bottom, kMainScreenWidth-10, 150) image:@""];
+    _footerView.image = [UIImage imageNamed:@"app-详情页_40.png"];
+    [_backScrollView addSubview:_footerView];
+    
+    
+    _backScrollView.contentSize = CGSizeMake(kMainScreenWidth, _footerView.bottom+10);
+    
+    
+    //headerView
+    [self getBroad];
+}
+
+#pragma mark -
+#pragma mark ==产品类型选择 点击事件==
+- (void)selectedViewTap:(UIButton *)button
+{
+    NSInteger index = button.tag - 1200;
+    
+    //选择
+    NSLog(@"产品类型选择index = %i", index);
+}
+
+#pragma mark -
+#pragma mark ==产品 点击事件==
+- (void)productViewTap:(UITapGestureRecognizer *)tap
+{
+    NSInteger index = tap.view.tag - 1300;
+    
+    NSLog(@"产品选择index = %i", index);
+}
+
+
+#pragma mark ==Broad==
+/**
+ *  头部滚动视图
+ */
+- (void)getBroad
+{
+    ParametersManagerObject *managerObject = [[ParametersManagerObject alloc] init];
+    
+    NSData *data = [managerObject getHeetBody];
+    
+    NetworkingCenter *networkingCenter = [[NetworkingCenter alloc] init];
+    
+    [networkingCenter setMyResultsHandle:^(NSMutableData *resultData) {
+        
+        __block NSError *error1 = [[NSError alloc] init];
+        NSDictionary *resultsDictionary = [NSJSONSerialization JSONObjectWithData:resultData options:NSJSONReadingMutableContainers error:&error1];
+        
+        NSArray *dataArray = [resultsDictionary objectForKey:@"data"];
+        
+        if ([managerObject checkSign:[resultsDictionary objectForKey:@"data"] Sign:[resultsDictionary objectForKey:@"sign"]]) {
+            
+            NSLog(@"result = %@", resultsDictionary);
+            
+            if ([[resultsDictionary objectForKey:@"result"] isEqualToString:@"ok"]) {
+                _broadInfoArr = [[NSMutableArray alloc] init];
+                for (NSDictionary *dict in dataArray) {
+                    BroadModel *model = [[BroadModel alloc] init];
+                    [model setValuesForKeysWithDictionary:dict];
+                    [_broadInfoArr addObject:model];
+                }
+                
+                
+                if (_broadInfoArr.count) {
+                    
+                    [self createCycleScrollView];
+                }
+                
+            }
+            
+            
+        }
+        
+        
+        
+        
+    }];
+    
+    [networkingCenter setMyError:^(NSError *error) {
+        NSLog(@"error = %@", error);
+    }];
+    
+    [networkingCenter myAsynchronousPostWithUrl:homeBroadURL postData:data];
+    
+}
+
+
+- (void)createCycleScrollView
+{
+    
+    //创建图片数组
+    NSMutableArray *viewsArray = [[NSMutableArray alloc] init];
+    for (BroadModel *model in _broadInfoArr) {
+        
+        [viewsArray addObject:model.photourl];
+    }
+    
+    //初始化
+    _mainScrollView = [[CycleScrollView alloc] initWithFrame:CGRectMake(0, 0, kMainScreenWidth, kMainScreenWidth*401/640) animationDuration:5 imageUrlArray:viewsArray];
+    
+    //点击了哪个view
+    __weak __typeof(&*self) weakSelf = self;
+    _mainScrollView.TapActionBlock = ^(NSInteger pageIndex){
+        NSLog(@"点击了第%li个",(long)pageIndex);
+        
+        
+        BroadModel *model = weakSelf.broadInfoArr[pageIndex];
+        ProductDetailViewController *myOrderFillInViewController = [[ProductDetailViewController alloc] init];
+        myOrderFillInViewController.ProductId = model.pid;
+        [weakSelf.navigationController pushViewController:myOrderFillInViewController animated:YES];
+        
+    };
+    
+    
+    //新
+    [_backScrollView addSubview:_mainScrollView];
+    [self setViewFrame];
+    
+}
+
+- (void)setViewFrame
+{
+    [self setViewFrameWithView:_selectedView Y:_mainScrollView.bottom];
+    [self setViewFrameWithView:_productView Y:_selectedView.bottom];
+    [self setViewFrameWithView:_footerView Y:_productView.bottom];
+    
+    _backScrollView.contentSize = CGSizeMake(kMainScreenWidth, _footerView.bottom+10);
+}
+
+- (void)setViewFrameWithView:(UIView *)view Y:(CGFloat)y
+{
+    CGRect frame = view.frame;
+    frame.origin.y = y;
+    [view setFrame:frame];
+}
+
+
+@end

@@ -1,0 +1,19 @@
+//
+//  BroadModel.h
+//  UThing
+//
+//  Created by Apple on 14/11/28.
+//  Copyright (c) 2014年 UThing. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+
+//首页轮播图
+@interface BroadModel : NSObject
+
+@property (nonatomic, strong) NSString *photo;
+@property (nonatomic, strong) NSString *photourl;
+@property (nonatomic, strong) NSString *pid;
+@property (nonatomic, strong) NSString *url;
+
+@end

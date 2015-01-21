@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
+	<false/>
+	<key>IDESourceControlProjectIdentifier</key>
+	<string>A3B7D86D-6EA4-4123-99D2-3B2E8A5274E3</string>
+	<key>IDESourceControlProjectName</key>
+	<string>UThing</string>
+	<key>IDESourceControlProjectOriginsDictionary</key>
+	<dict>
+		<key>6498491a-ed81-4614-a01c-9d525db31fa1++4234</key>
+		<string>http://192.168.4.11:8888/svn/utapp/trunk/Uthing-IOS</string>
+		<key>6498491a-ed81-4614-a01c-9d525db31fa1++6272</key>
+		<string>http://192.168.4.11:8888/svn/utapp/branches/IOS_1.0.3/Uthing-IOS</string>
+	</dict>
+	<key>IDESourceControlProjectPath</key>
+	<string>UThing/UThing.xcodeproj</string>
+	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
+	<dict>
+		<key>6498491a-ed81-4614-a01c-9d525db31fa1++4234</key>
+		<string>../../../../Uthing-IOS</string>
+		<key>6498491a-ed81-4614-a01c-9d525db31fa1++6272</key>
+		<string>../../..</string>
+	</dict>
+	<key>IDESourceControlProjectRepositoryRootDictionary</key>
+	<dict>
+		<key>6498491a-ed81-4614-a01c-9d525db31fa1++4234</key>
+		<string>http://192.168.4.11:8888/svn/utapp</string>
+		<key>6498491a-ed81-4614-a01c-9d525db31fa1++6272</key>
+		<string>http://192.168.4.11:8888/svn/utapp</string>
+	</dict>
+	<key>IDESourceControlProjectURL</key>
+	<string>http://192.168.4.11:8888/svn/utapp/branches/IOS_1.0.3/Uthing-IOS/UThing/UThing.xcodeproj</string>
+	<key>IDESourceControlProjectVersion</key>
+	<integer>111</integer>
+	<key>IDESourceControlProjectWCCIdentifier</key>
+	<string>6498491a-ed81-4614-a01c-9d525db31fa1++6272</string>
+	<key>IDESourceControlProjectWCConfigurations</key>
+	<array>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.subversion</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>6498491a-ed81-4614-a01c-9d525db31fa1++4234</string>
+			<key>IDESourceControlWCCName</key>
+			<string>Uthing-IOS</string>
+		</dict>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.subversion</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>6498491a-ed81-4614-a01c-9d525db31fa1++6272</string>
+			<key>IDESourceControlWCCName</key>
+			<string>uu-hh-ios</string>
+		</dict>
+	</array>
+</dict>
+</plist>

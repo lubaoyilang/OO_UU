@@ -1,0 +1,672 @@
+//
+//  HomePageViewController.m
+//  UThing
+//
+//  Created by Apple on 14/11/14.
+//  Copyright (c) 2014年 UThing. All rights reserved.
+//
+
+#import "HomePageViewController.h"
+
+#import "HomePageTableViewCell.h"
+#import "ParametersManagerObject.h"
+#import "HomeModel.h"
+#import "BroadModel.h"
+#import "NetworkingCenter.h"
+#import "CycleScrollView.h"
+#import "MJRefresh.h"
+
+#import "MyOrderFillInViewController.h"
+#import "ProductDetailViewController.h"
+#import "LoginStatusObject.h"
+#import "HotelProductDetailViewController.h"
+@class AppDelegate;
+
+
+
+static CGFloat const selectedViewHeight = 60;
+static NSInteger const selectedNum = 5; //每行放置几个按钮
+
+@interface HomePageViewController ()<UITableViewDataSource, UITableViewDelegate, HomePageTableViewCellDelegate, UITabBarControllerDelegate, UIAlertViewDelegate>
+{
+    UITableView *h_tableView;
+    UITabBarController *h_tabBarController;
+    CGFloat height;
+}
+@property (nonatomic, strong) UIView *headScrollViewBackView;
+@property (nonatomic, strong) NSArray *dataArray;
+@property (nonatomic) NSMutableArray *broadInfoArr;
+@property (nonatomic, strong) UIAlertView *homePageAl;
+
+@property (nonatomic, strong) UIScrollView *backScrollView;
+@property (nonatomic, strong) CycleScrollView *mainScrollView;
+@property (nonatomic, strong) UIView *selectedView;
+@property (nonatomic, strong) UIView *productView;
+@property (nonatomic, strong) UIImageView *footerView;
+
+@end
+
+@implementation HomePageViewController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    
+    float ver =[[[UIDevice currentDevice] systemVersion] floatValue];
+    if(ver>=7.0)
+    {
+        self.navigationController.navigationBar.translucent = NO;
+        self.tabBarController.tabBar.translucent = NO;
+    }
+    
+
+    //新
+    //[self mainView];
+    
+    //旧
+    [self oldView];
+    
+}
+
+
+
+
+#pragma mark -
+#pragma mark ==新==
+- (void)mainView
+{
+    
+    
+    _backScrollView = [[UIScrollView alloc] initWithFrame:CGRectMake(0, 0, kMainScreenWidth, kMainScreenHeight-49)];
+    _backScrollView.backgroundColor = [UIColor colorFromHexRGB:@"eeeeee"];
+    _backScrollView.showsVerticalScrollIndicator = NO;
+    [self.view addSubview:_backScrollView];
+    
+    //中部选择栏
+    
+    _selectedView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, kMainScreenWidth, selectedViewHeight)];
+    _selectedView.backgroundColor = [UIColor whiteColor];
+    [_backScrollView addSubview:_selectedView];
+    
+    NSArray *nameArray = @[@"定制旅行", @"当地游", @"自由行", @"酒店套餐", @"规划师"];
+    NSArray *imageArray = @[@"app-详情页_07.png", @"app-详情页_07.png", @"app-详情页_07.png", @"app-详情页_07.png", @"app-详情页_07.png"];
+    
+    CGFloat w = kMainScreenWidth/selectedNum;
+    CGFloat h = selectedViewHeight;
+    for (NSInteger i=0; i<nameArray.count; i++) {
+        
+        CGFloat x = w*(i%selectedNum);
+        CGFloat y = selectedViewHeight*(i/selectedNum);
+        
+        UIButton *button = [UIButton buttonWithType:UIButtonTypeCustom];
+        [button setFrame:CGRectMake(x, y, w, h)];
+        button.tag = 1200 + i;
+        
+        UIImageView *imageView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, 30, 30)];
+        imageView.center = CGPointMake(w/2, (h-20)/2);
+        imageView.image = IMAGE(imageArray[i]);
+        [button addSubview:imageView];
+        
+        button.titleEdgeInsets = UIEdgeInsetsMake(selectedViewHeight-23, 0, 0, 0);
+        button.titleLabel.textAlignment = NSTextAlignmentCenter;
+        [button setTitleColor:[UIColor colorFromHexRGB:@"989898"] forState:UIControlStateNormal];
+        button.titleLabel.font = [UIFont systemFontOfSize:11];
+        [button setTitle:nameArray[i] forState:UIControlStateNormal];
+        
+        [button addTarget:self action:@selector(selectedViewTap:) forControlEvents:UIControlEventTouchUpInside];
+        
+        [_selectedView addSubview:button];
+        
+    }
+    
+    
+    
+    //产品
+    CGFloat top = _selectedView.bottom;
+    CGFloat w1 = (kMainScreenWidth-15)/2;
+    CGFloat h1 = w1 * .95;
+    
+    _productView = [[UIImageView alloc] initWithFrame:CGRectMake(0, top, kMainScreenWidth, (2*h1+15))];
+    _productView.userInteractionEnabled = YES;
+    _productView.backgroundColor = [UIColor colorFromHexRGB:@"eeeeee"];
+    [_backScrollView addSubview:_productView];
+    
+    for (NSInteger i = 0; i < 4; i++) {
+        CGFloat x = 5 + i % 2 * (w1+5);
+        CGFloat y = 5 + (h1+5) * (i/2);
+        
+        UIView *view = [[UIView alloc] initWithFrame:CGRectMake(x, y, w1, h1)];
+        view.backgroundColor = [UIColor whiteColor];
+        view.userInteractionEnabled = YES;
+        view.tag = 1300 + i;
+        
+        UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(productViewTap:)];
+        [view addGestureRecognizer:tap];
+        
+        [_productView addSubview:view];
+        
+        
+        
+        
+        UIImageView *imageView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, w1, w1*0.7)];
+        imageView.image = [UIImage imageNamed:@"app-详情页_40.png"];
+        [view addSubview:imageView];
+        
+        UILabel *label = [UILabel labelWithFrame:CGRectMake(5, imageView.bottom, w1-10, w1*.25) text:@"蓝色土耳其浪漫风情之旅8天, 蓝色土耳其浪漫风情之旅8天"];
+        label.font = [UIFont systemFontOfSize:12];
+        label.numberOfLines = 2;
+        [view addSubview:label];
+    }
+    
+    
+    
+    //footerView
+    //需判断是否存在footerView
+    _footerView = [UIImageView imageViewWithFrame:CGRectMake(5, _productView.bottom, kMainScreenWidth-10, 150) image:@""];
+    _footerView.image = [UIImage imageNamed:@"app-详情页_40.png"];
+    [_backScrollView addSubview:_footerView];
+    
+    
+    _backScrollView.contentSize = CGSizeMake(kMainScreenWidth, _footerView.bottom+10);
+    
+    
+    //headerView
+    [self getBroad];
+}
+
+#pragma mark -
+#pragma mark ==产品类型选择 点击事件==
+- (void)selectedViewTap:(UIButton *)button
+{
+    NSInteger index = button.tag - 1200;
+    
+    //选择
+    NSLog(@"产品类型选择index = %i", index);
+}
+
+#pragma mark -
+#pragma mark ==产品 点击事件==
+- (void)productViewTap:(UITapGestureRecognizer *)tap
+{
+    NSInteger index = tap.view.tag - 1300;
+    
+    NSLog(@"产品选择index = %i", index);
+}
+
+
+#pragma mark ==Broad==
+/**
+ *  头部滚动视图
+ */
+- (void)getBroad
+{
+    ParametersManagerObject *managerObject = [[ParametersManagerObject alloc] init];
+    
+    NSData *data = [managerObject getHeetBody];
+    
+    NetworkingCenter *networkingCenter = [[NetworkingCenter alloc] init];
+    
+    [networkingCenter setMyResultsHandle:^(NSMutableData *resultData) {
+        
+        __block NSError *error1 = [[NSError alloc] init];
+        NSDictionary *resultsDictionary = [NSJSONSerialization JSONObjectWithData:resultData options:NSJSONReadingMutableContainers error:&error1];
+        
+        NSArray *dataArray = [resultsDictionary objectForKey:@"data"];
+        
+        if ([managerObject checkSign:[resultsDictionary objectForKey:@"data"] Sign:[resultsDictionary objectForKey:@"sign"]]) {
+            
+            NSLog(@"result = %@", resultsDictionary);
+            
+            if ([[resultsDictionary objectForKey:@"result"] isEqualToString:@"ok"]) {
+                _broadInfoArr = [[NSMutableArray alloc] init];
+                for (NSDictionary *dict in dataArray) {
+                    BroadModel *model = [[BroadModel alloc] init];
+                    [model setValuesForKeysWithDictionary:dict];
+                    [_broadInfoArr addObject:model];
+                }
+                
+                
+                if (_broadInfoArr.count) {
+                    
+                    [self createCycleScrollView];
+                }
+                
+            }
+            
+            
+        }
+        
+        
+        
+        
+    }];
+    
+    [networkingCenter setMyError:^(NSError *error) {
+        NSLog(@"error = %@", error);
+    }];
+    
+    [networkingCenter myAsynchronousPostWithUrl:homeBroadURL postData:data];
+    
+}
+
+
+- (void)createCycleScrollView
+{
+    
+    //创建图片数组
+    NSMutableArray *viewsArray = [[NSMutableArray alloc] init];
+    for (BroadModel *model in _broadInfoArr) {
+        
+        [viewsArray addObject:model.photourl];
+    }
+    
+    //初始化
+    _mainScrollView = [[CycleScrollView alloc] initWithFrame:CGRectMake(0, 0, kMainScreenWidth, kMainScreenWidth*401/640) animationDuration:5 imageUrlArray:viewsArray];
+    
+    //点击了哪个view
+    __weak __typeof(&*self) weakSelf = self;
+    _mainScrollView.TapActionBlock = ^(NSInteger pageIndex){
+        NSLog(@"点击了第%li个",(long)pageIndex);
+        
+        
+        BroadModel *model = weakSelf.broadInfoArr[pageIndex];
+        ProductDetailViewController *myOrderFillInViewController = [[ProductDetailViewController alloc] init];
+        myOrderFillInViewController.ProductId = model.pid;
+        [weakSelf.navigationController pushViewController:myOrderFillInViewController animated:YES];
+        
+    };
+    
+    //旧
+    h_tableView.tableHeaderView = _mainScrollView;
+    
+    //新
+//    [_backScrollView addSubview:_mainScrollView];
+//    [self setViewFrame];
+    
+}
+
+- (void)setViewFrame
+{
+    [self setViewFrameWithView:_selectedView Y:_mainScrollView.bottom];
+    [self setViewFrameWithView:_productView Y:_selectedView.bottom];
+    [self setViewFrameWithView:_footerView Y:_productView.bottom];
+    
+    _backScrollView.contentSize = CGSizeMake(kMainScreenWidth, _footerView.bottom+10);
+}
+
+- (void)setViewFrameWithView:(UIView *)view Y:(CGFloat)y
+{
+    CGRect frame = view.frame;
+    frame.origin.y = y;
+    [view setFrame:frame];
+}
+
+#pragma mark -
+#pragma mark ==旧==
+
+- (void)oldView
+{
+    height = 140+(kMainScreenWidth-20)*ELEMENTVIEW_ASPECT_RATIO;
+    
+    
+    self.title = @"自在旅行,记忆游心";
+    
+    _dataArray = [[NSMutableArray alloc] initWithCapacity:4];
+    
+    UIImageView *backView = [[UIImageView alloc] initWithFrame:self.view.bounds];
+    backView.image = [UIImage imageNamed:@"list-bg.png"];
+    [self.view addSubview:backView];
+    
+    
+    [self createMainView];
+    [self initTabBar];
+
+    [self getTheHeetBodyIsFirst:YES];
+
+    //[self getBroad];
+}
+
+
+
+#pragma mark ==Internet==
+- (void)getTheHeetBodyIsFirst:(BOOL)isFirst
+{
+    ParametersManagerObject *managerObject = [[ParametersManagerObject alloc] init];
+    [managerObject addParamer:@"types=1,2,4,5"];
+    [managerObject addParamer:@"num=4"];
+    [managerObject addParamer:@"order=updatetime"];
+    
+    NSData *data = [managerObject getHeetBody];
+    
+    NetworkingCenter *networkingCenter = [[NetworkingCenter alloc] init];
+    
+    if (isFirst) {
+        [networkingCenter setMyProgressHUD:^{
+            [self showHub:@"数据加载中"];
+        }];
+    }
+    
+    
+    [networkingCenter setMyResultsHandle:^(NSMutableData *resultData) {
+
+        [self hideHub];
+        
+        [h_tableView headerEndRefreshing];
+        
+        __block NSError *error1 = [[NSError alloc] init];
+        NSDictionary *resultsDictionary = [NSJSONSerialization JSONObjectWithData:resultData options:NSJSONReadingMutableContainers error:&error1];
+
+
+        
+        if ([managerObject checkSign:[resultsDictionary objectForKey:@"data"] Sign:[resultsDictionary objectForKey:@"sign"]]) {
+            
+            [self handleTheResultsDictionary:resultsDictionary];
+        }
+        
+        
+        
+    }];
+    
+    [networkingCenter setMyError:^(NSError *error) {
+        NSLog(@"error = %@", error);
+        
+        [self hideHub];
+        [h_tableView headerEndRefreshing];
+        
+        _homePageAl = [[UIAlertView alloc] initWithTitle:@"温馨提示" message:@"连接服务器超时,请检查您的网络" delegate:self cancelButtonTitle:@"刷新" otherButtonTitles:nil, nil];
+        
+        [_homePageAl show];
+    }];
+
+    [networkingCenter myAsynchronousPostWithUrl:homeURL postData:data];
+}
+/**
+ *  网络超时 点击刷新 重新加载数据
+ *
+ *  @param alertView
+ *  @param buttonIndex
+ */
+- (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
+{
+    [super alertView:alertView clickedButtonAtIndex:buttonIndex];
+    if (alertView == _homePageAl && buttonIndex == 0) {
+        [self getTheHeetBodyIsFirst:YES];
+        
+        [self getBroad];
+    }
+}
+
+
+- (void)handleTheResultsDictionary:(NSDictionary *)resultsDictionary
+{
+    NSString *result = [resultsDictionary objectForKey:@"result"];
+    
+    
+    if (_dataArray) {
+        _dataArray = nil;
+    }
+    
+    if ([result isEqualToString:@"ok"]) {
+        
+        NSDictionary *dataDict = [resultsDictionary objectForKey:@"data"];
+
+        NSMutableArray *dataArr = [[NSMutableArray alloc] init];
+        for (NSDictionary *dictValues in [dataDict allValues]) {
+            HomeModel *homeModel = [[HomeModel alloc] init];
+            NSArray *array = [dictValues objectForKey:@"data"];
+            
+            //
+            for (NSDictionary *subdict in array) {
+                
+                ProductModel *productModel = [[ProductModel alloc] init];
+                [productModel setValuesForKeysWithDictionary:subdict];
+                
+                [homeModel.productArr addObject:productModel];
+            }
+            
+            homeModel.infoDict = [[NSDictionary alloc] initWithDictionary:[dictValues objectForKey:@"info"]];
+            
+            homeModel.type = [[homeModel.infoDict objectForKey:@"id"] intValue];
+            
+            [dataArr addObject:homeModel];
+          
+        }
+        _dataArray = [self sortDataArr:dataArr];
+        [h_tableView reloadData];
+    }
+    else {
+        
+    }
+    
+}
+
+//字典排序
+- (NSArray *)sortDataArr:(NSArray *)dataArr
+{
+    NSSortDescriptor *sortDescriptor;
+    sortDescriptor = [[NSSortDescriptor alloc] initWithKey:@"type" ascending:YES];
+    NSArray *sortDescriptors = [NSArray arrayWithObject:sortDescriptor];
+    NSArray *sortedArray;
+    sortedArray = [dataArr sortedArrayUsingDescriptors:sortDescriptors];
+    return sortedArray;
+}
+
+
+//homepage 底部视图
+- (void)initTabBar
+{
+    //MrU
+    UIViewController *first = [[UIViewController alloc] init];
+    first.title = @"定制旅行";
+    first.tabBarItem.tag = 1;
+    
+    
+    //海外参团
+    UIViewController *second = [[UIViewController alloc] init];
+    second.title = @"当地游";
+    second.tabBarItem.tag = 2;
+    
+    
+    //
+    UIViewController *third = [[UIViewController alloc] init];
+    third.title = @"自由行";
+    third.tabBarItem.tag = 3;
+    
+    
+    //酒店套餐
+    UIViewController *fourth = [[UIViewController alloc] init];
+    fourth.title = @"酒店套餐";
+    fourth.tabBarItem.tag = 4;
+    
+    UIViewController *fifth = [[UIViewController alloc] init];
+    fifth.title = @"目的地";
+    fifth.tabBarItem.tag = 5;
+
+    
+    //
+    if (IOS_7) {
+        first.tabBarItem.selectedImage = [[UIImage imageNamed:@"U制造_active"] imageWithRenderingMode:UIImageRenderingModeAlwaysOriginal];
+        first.tabBarItem.image = [[UIImage imageNamed:@"U制造_active"] imageWithRenderingMode:UIImageRenderingModeAlwaysOriginal];
+        
+        second.tabBarItem.selectedImage = [[UIImage imageNamed:@"海外参团"] imageWithRenderingMode:UIImageRenderingModeAlwaysOriginal];
+        second.tabBarItem.image = [[UIImage imageNamed:@"海外参团_active"] imageWithRenderingMode:UIImageRenderingModeAlwaysOriginal];
+        
+        third.tabBarItem.selectedImage = [[UIImage imageNamed:@"自由行"] imageWithRenderingMode:UIImageRenderingModeAlwaysOriginal];
+        third.tabBarItem.image = [[UIImage imageNamed:@"自由行_active"] imageWithRenderingMode:UIImageRenderingModeAlwaysOriginal];
+        
+        fourth.tabBarItem.selectedImage = [[UIImage imageNamed:@"酒店套餐"] imageWithRenderingMode:UIImageRenderingModeAlwaysOriginal];
+        fourth.tabBarItem.image = [[UIImage imageNamed:@"酒店套餐-active"] imageWithRenderingMode:UIImageRenderingModeAlwaysOriginal];
+        
+        fifth.tabBarItem.selectedImage = [[UIImage imageNamed:@"目的地"] imageWithRenderingMode:UIImageRenderingModeAlwaysOriginal];
+        fifth.tabBarItem.image = [[UIImage imageNamed:@"目的地_active"] imageWithRenderingMode:UIImageRenderingModeAlwaysOriginal];
+    }
+    else{
+
+        [first.tabBarItem setFinishedSelectedImage:[UIImage imageNamed:@"U制造_active"] withFinishedUnselectedImage:[UIImage imageNamed:@"U制造_active"]];
+        
+        [second.tabBarItem setFinishedSelectedImage:[UIImage imageNamed:@"海外参团"] withFinishedUnselectedImage:[UIImage imageNamed:@"海外参团_active"]];
+        
+        [third.tabBarItem setFinishedSelectedImage:[UIImage imageNamed:@"自由行"] withFinishedUnselectedImage:[UIImage imageNamed:@"自由行_active"]];
+        
+        [fourth.tabBarItem setFinishedSelectedImage:[UIImage imageNamed:@"酒店套餐"] withFinishedUnselectedImage:[UIImage imageNamed:@"酒店套餐-active"]];
+        
+        [fifth.tabBarItem setFinishedSelectedImage:[UIImage imageNamed:@"目的地"] withFinishedUnselectedImage:[UIImage imageNamed:@"目的地_active"]];
+        
+    }
+    
+    
+    h_tabBarController=[[UITabBarController alloc] init] ;
+    h_tabBarController.tabBar.barTintColor = RGBCOLOR(58, 183, 198);
+
+    h_tabBarController.delegate = self;
+    
+    [h_tabBarController setViewControllers:[NSArray arrayWithObjects:first,second,third, fourth, fifth, nil]];
+   
+    h_tabBarController.selectedIndex = 7;
+    
+    UITabBarItem *item = [h_tabBarController.tabBar.items objectAtIndex:0];
+    [item setTitleTextAttributes:[NSDictionary dictionaryWithObjectsAndKeys:[UIColor whiteColor], NSForegroundColorAttributeName, nil] forState:UIControlStateSelected];
+    
+    [[UITabBarItem appearance] setTitleTextAttributes:[NSDictionary dictionaryWithObjectsAndKeys:[UIColor whiteColor],NSForegroundColorAttributeName,nil] forState:UIControlStateNormal];
+    
+    [[UITabBarItem appearance] setTitleTextAttributes:[NSDictionary dictionaryWithObjectsAndKeys:[UIColor whiteColor],NSForegroundColorAttributeName,nil] forState:UIControlStateSelected];
+    
+    [self.view addSubview:h_tabBarController.tabBar];
+    
+    for (int i=0; i<5; i++) {
+        UIControl *control = [[UIControl alloc] initWithFrame:CGRectMake(i*(self.view.bounds.size.width/5), 0, self.view.bounds.size.width/5, 49)];
+        control.tag = 800+i;
+        [control addTarget:self action:@selector(goTheTabBar:) forControlEvents:UIControlEventTouchUpInside];
+        [h_tabBarController.tabBar addSubview:control];
+        
+    }
+}
+//跳转界面
+- (void)goTheTabBar:(UIControl *)control
+{
+    NSLog(@"control.tag = %i", control.tag-800);
+    if (_delegate && [_delegate respondsToSelector:@selector(clickTabBarIndex:)]) {
+        
+        [_delegate clickTabBarIndex:control.tag-800];
+    }
+}
+//取消tabBar的点击事件
+- (BOOL)tabBarController:(UITabBarController *)tabBarController shouldSelectViewController:(UIViewController *)viewController
+{
+    return NO;
+}
+
+/*
+ *主页tableView视图
+ */
+#pragma mark - MainListView
+- (void)createMainView
+{
+    h_tableView = [[UITableView alloc] initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, self.view.bounds.size.height-64-49) style:UITableViewStylePlain];
+    h_tableView.delegate = self;
+    h_tableView.dataSource = self;
+    h_tableView.backgroundColor = [UIColor clearColor];
+    h_tableView.allowsSelection = NO;
+    h_tableView.rowHeight = height;
+    h_tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
+    
+    [h_tableView addHeaderWithTarget:self action:@selector(headerRereshing) dateKey:@"table"];
+    
+    h_tableView.headerPullToRefreshText = @"下拉可以刷新了";
+    h_tableView.headerReleaseToRefreshText = @"松开马上刷新了";
+    h_tableView.headerRefreshingText = @"正在玩命加载中...";
+    
+    [self.view addSubview:h_tableView];
+}
+
+- (void)headerRereshing
+{
+    [self getTheHeetBodyIsFirst:NO];
+}
+
+
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
+    return _dataArray.count;
+}
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    static NSString *cellID = @"cell";
+    HomePageTableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:cellID];
+    
+    if (cell == nil) {
+        cell = [[HomePageTableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:cellID ];
+        cell.m_delegate = self;
+    }
+    
+    cell.cellIndex = indexPath.row;
+    if (_dataArray.count != 0) {
+        cell.homeModel = _dataArray[indexPath.row];
+        [cell reloadCellData];
+    }
+    [cell setDataToTheControl];
+//
+    return cell;
+}
+
+
+
+#pragma mark ==Delegate Method==
+- (void)clickToDetailViewInCell:(NSInteger)index cellIndex:(NSInteger)cellIndex
+{
+    //DetailView
+    
+    if (cellIndex == 3) {
+        
+        
+        HotelProductDetailViewController *hp = [[HotelProductDetailViewController alloc] init];
+        HomeModel *homeModel = _dataArray[cellIndex];
+        ProductModel *model =[homeModel.productArr safeObjectIndex:index];
+        
+        hp.ProductId = [NSString stringWithFormat:@"%d",model.id];
+        
+        [self.navigationController pushViewController:hp animated:YES];
+        
+    } else {
+        ProductDetailViewController *myOrderFillInViewController = [[ProductDetailViewController alloc] init];
+        
+        
+        if (_dataArray.count) {
+            
+            HomeModel *homeModel = _dataArray[cellIndex];
+            ProductModel *productModel = [homeModel.productArr objectAtIndex:index];
+            myOrderFillInViewController.ProductId = [NSString stringWithFormat:@"%i",productModel.id];
+        }
+        
+        [self.navigationController pushViewController:myOrderFillInViewController animated:YES];
+    }
+    
+    
+}
+
+- (void)checkMoreInCell:(NSInteger)index
+{
+    
+    if (_delegate && [_delegate respondsToSelector:@selector(clickHomepageIndex:)]) {
+        [_delegate clickHomepageIndex:index];
+    }
+}
+
+
+
+- (void)didReceiveMemoryWarning {
+    [super didReceiveMemoryWarning];
+    // Dispose of any resources that can be recreated.
+}
+
+/*
+#pragma mark - Navigation
+
+// In a storyboard-based application, you will often want to do a little preparation before navigation
+- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
+    // Get the new view controller using [segue destinationViewController].
+    // Pass the selected object to the new view controller.
+}
+*/
+
+@end

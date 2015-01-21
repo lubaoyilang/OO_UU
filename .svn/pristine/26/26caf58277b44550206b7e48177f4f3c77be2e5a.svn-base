@@ -1,0 +1,70 @@
+//
+//  PrefixUthingpch.pch
+//  UThing
+//
+//  Created by luyuda on 14/11/18.
+//  Copyright (c) 2014年 UThing. All rights reserved.
+//
+
+#ifdef __OBJC__
+#import <Foundation/Foundation.h>
+#import "NSDate+Convenience.h"
+#import "QuickControl.h"
+#import "StringDefine.h"
+#import "Ipconfig.h"
+#import "UIView+Common.h"
+#import "UIImageView+WebCache.h"
+#import "NSString+PJR.h"
+#import "SBJson.h"
+#import "ParametersManagerObject.h"
+#import "NSDate+Exts.h"
+#import "LoginStatusObject.h"
+#import "SVProgressHUD.h"
+#import "NSArray+safeArray.h"
+#import "QBFlatButton.h"
+#import "UserInfoSingleton.h"
+#import "UIImageView+ImageSize.h"
+//define this constant if you want to enable auto-boxing for default syntax
+#define MAS_SHORTHAND_GLOBALS
+#import "Masonry.h"
+#endif
+
+
+//获取当前屏幕的高度
+#define kMainScreenHeight ([UIScreen mainScreen].applicationFrame.size.height)
+
+//获取当前屏幕的宽度
+#define kMainScreenWidth  ([UIScreen mainScreen].applicationFrame.size.width)
+
+
+
+
+#define iPhone6Plus ([UIScreen instancesRespondToSelector:@selector(currentMode)] ? CGSizeEqualToSize(CGSizeMake(1242,2208), [[UIScreen mainScreen] currentMode].size) : NO)
+#define DEVICE_IS_IPHONE6P ([[UIScreen mainScreen] nativeBounds].size.height > 1600)
+
+//----------------------图片----------------------------
+
+//读取本地图片
+#define LOADIMAGE(file,ext) [UIImage imageWithContentsOfFile:[[NSBundle mainBundle]pathForResource:file ofType:ext]]
+
+//定义UIImage对象
+#define IMAGE(A) [UIImage imageWithContentsOfFile:[[NSBundle mainBundle] pathForResource:A ofType:nil]]
+
+//定义UIImage对象
+#define ImageNamed(_pointer) [UIImage imageNamed:[UIUtil imageName:_pointer]]
+
+#define RGBCOLOR(R,G,B) [UIColor colorWithRed:R/255.0 green:G/255.0 blue:B/255.0 alpha:1]
+#define RGBACOLOR(R,G,B,A) [UIColor colorWithRed:R/255.0 green:G/255.0 blue:B/255.0 alpha:A]
+
+#define kDarkGrayColor       RGBCOLOR(51, 51, 51)
+#define kGrayColor           RGBCOLOR(153, 153, 153)
+#define kLightGrayColor      RGBCOLOR(189, 189, 189)
+#define HexRGB(rgbValue) [UIColor colorWithRed:((float)((rgbValue & 0xFF0000) >> 16))/255.0 green:((float)((rgbValue & 0xFF00) >> 8))/255.0 blue:((float)(rgbValue & 0xFF))/255.0 alpha:1.0]
+
+#ifdef DEBUG
+#define NSLog(...) NSLog(__VA_ARGS__)
+#define debugMethod() NSLog(@"%s", __func__)
+#else
+#define NSLog(...)
+#define debugMethod()
+#endif
